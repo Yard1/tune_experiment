@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Type, Union
 import pandas as pd
+import inspect
 from ray import tune
 from ray.tune.sample import Sampler, Categorical
 from ray.tune.suggest import Searcher, SearchAlgorithm
@@ -25,8 +26,7 @@ from optuna.samplers import TPESampler, CmaEsSampler
 
 class Searcher(ABC):
     @abstractmethod
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -35,13 +35,8 @@ class Searcher(ABC):
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
         return
 
-    @property
-    def scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+    def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         return None
-
-    @property
-    def name(self) -> str:
-        return f"{self.searcher_instance.__class__.__name__}-{self.scheduler_instance.__class__.__name__}"
 
     supports_categorical: bool = True
     uses_partial_results: bool = False
@@ -53,8 +48,7 @@ class Searcher(ABC):
 
 
 class RandomSearch(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -65,8 +59,7 @@ class RandomSearch(Searcher):
 
 
 class AxSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -77,8 +70,7 @@ class AxSearcher(Searcher):
 
 
 class BayesOptSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -92,8 +84,7 @@ class BayesOptSearcher(Searcher):
 
 
 class BOHBSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -102,16 +93,14 @@ class BOHBSearcher(Searcher):
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
         return TuneBOHB(max_concurrent=max_concurrent, seed=random_state)
 
-    @property
-    def scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+    def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         return HyperBandForBOHB(max_t=max_t)
 
     uses_partial_results: bool = True
 
 
 class DragonflyBanditSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -122,8 +111,7 @@ class DragonflyBanditSearcher(Searcher):
 
 
 class DragonflyGeneticSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -134,8 +122,7 @@ class DragonflyGeneticSearcher(Searcher):
 
 
 class BlendSearchSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -171,8 +158,7 @@ class BlendSearchSearcher(Searcher):
 
 
 class CFOSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -208,8 +194,7 @@ class CFOSearcher(Searcher):
 
 
 class HEBOSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -221,8 +206,7 @@ class HEBOSearcher(Searcher):
 
 
 class HyperOptSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -235,8 +219,7 @@ class HyperOptSearcher(Searcher):
 
 
 class NevergradSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -247,8 +230,7 @@ class NevergradSearcher(Searcher):
 
 
 class OptunaTPESearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -264,8 +246,7 @@ class OptunaTPESearcher(Searcher):
 
 
 class OptunaCMAESSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -281,8 +262,7 @@ class OptunaCMAESSearcher(Searcher):
 
 
 class SkOptSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -293,8 +273,7 @@ class SkOptSearcher(Searcher):
 
 
 class ZOOptSearcher(Searcher):
-    @property
-    def searcher_instance(
+    def get_searcher_instance(
             self,
             config: Dict[str, Sampler],
             init_config: Dict[str, Any],
@@ -305,8 +284,7 @@ class ZOOptSearcher(Searcher):
 
 
 class PBTSearcher(RandomSearch):
-    @property
-    def scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+    def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         return PopulationBasedTraining()
 
     uses_partial_results: bool = True
@@ -314,3 +292,28 @@ class PBTSearcher(RandomSearch):
     suitable_for_dl: bool = True
     suitable_for_rf: bool = True
     suitable_for_test_functions: bool = False
+
+
+# dynamically generate ASHA classes
+new_globals = {}
+searcher_registry: Dict[str, Type[Searcher]] = {}
+__all__ = ["searcher_registry"]
+temp_globals = globals().copy()
+for k, v in temp_globals.items():
+
+    def get_asha_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+        return ASHAScheduler(max_t=max_t)
+
+    if v is not Searcher and inspect.isclass(v) and issubclass(
+            v,
+            Searcher) and v.get_scheduler_instance == Searcher.get_scheduler_instance:
+        asha_name = f"ASHA{v.__name__}"
+        asha_class = type(asha_name, (v, ),
+                          {"get_scheduler_instance": get_asha_scheduler_instance})
+        new_globals[asha_name] = asha_class
+        __all__.append(k)
+        __all__.append(asha_name)
+        searcher_registry[k] = v
+        searcher_registry[asha_name] = asha_class
+
+globals().update(new_globals)

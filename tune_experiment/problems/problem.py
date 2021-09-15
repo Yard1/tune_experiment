@@ -13,8 +13,8 @@ class Problem(ABC):
     def name(self) -> str:
         return self.__class__.__name__
 
-    @abstractmethod
     @property
+    @abstractmethod
     def config(self) -> Dict[str, Sampler]:
         return
 
@@ -24,8 +24,8 @@ class Problem(ABC):
         config[self.early_stopping_key] = self.early_stopping_iters
         return config
 
-    @abstractmethod
     @property
+    @abstractmethod
     def init_config(self) -> Dict[str, Sampler]:
         return
 
@@ -33,33 +33,33 @@ class Problem(ABC):
     def has_categorical_parameters(self) -> bool:
         return any(isinstance(v, Categorical) for v in self.config.values())
 
-    @abstractmethod
     @property
+    @abstractmethod
     def early_stopping_key(self) -> str:
         return
 
-    @abstractmethod
     @property
+    @abstractmethod
     def early_stopping_iters(self) -> int:
         return
 
-    @abstractmethod
     @property
+    @abstractmethod
     def metric_name(self) -> str:
         return
 
-    @abstractmethod
     @property
+    @abstractmethod
     def metric_mode(self) -> str:
         return
 
-    @abstractmethod
     @property
+    @abstractmethod
     def trainable(self) -> Callable:
         return
 
-    @abstractmethod
     @property
+    @abstractmethod
     def resource_requirements(self) -> PlacementGroupFactory:
         return
 
