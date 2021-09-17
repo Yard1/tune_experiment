@@ -28,7 +28,7 @@ class XGBoostProblem(Problem):
     @property
     def config(self) -> Dict[str, Sampler]:
         return {
-            "n_estimators": tune.lograndint(10, 1000),
+            "n_estimators": tune.lograndint(1, 50),
             "max_depth": tune.randint(1, 10),
             "min_child_weight": tune.loguniform(0.001, 128),
             "learning_rate": tune.loguniform(1 / 1024, 1.0),
@@ -42,7 +42,7 @@ class XGBoostProblem(Problem):
     @property
     def init_config(self) -> Dict[str, Sampler]:
         return {
-            "n_estimators": 100,
+            "n_estimators": 10,
             "max_depth": 6,
             "min_child_weight": 1,
             "learning_rate": 0.3,
@@ -59,7 +59,7 @@ class XGBoostProblem(Problem):
 
     @property
     def early_stopping_iters(self) -> int:
-        return 200
+        return 50
 
     def _get_estimator(self, config: dict, random_seed: int):
         return xgb.XGBClassifier(
@@ -79,13 +79,11 @@ class XGBoostProblem(Problem):
     @property
     def trainable(self) -> Callable:
         def xgboost_trainable(config: dict,
-                              dataset: pd.DataFrame,
-                              target_column: str,
+                              X,
+                              y,
                               cv_folds: int,
                               random_seed: int,
                               checkpoint_dir: Optional[str] = None):
-            X = dataset.drop(target_column, axis=1)
-            y = dataset[target_column]
             if checkpoint_dir:
                 with open(os.path.join(checkpoint_dir, "checkpoint"),
                           "rb") as f:
@@ -112,7 +110,7 @@ class XGBoostProblem(Problem):
                 for i, train_test in enumerate(cv_splitter.split(X, y)):
                     train, test = train_test
                     xgb_estimator_fold = clone(xgb_estimator)
-                    xgb_estimator_fold.set_params(**{self.early_stopping_key: 1})
+                    xgb_estimator_fold.set_params(**{self.early_stopping_key: 10})
                     xgb_estimator_fold.fit(_safe_indexing(X, train), _safe_indexing(y, train), **self._get_fit_kwargs(xgb_models[i]))
                     pred_proba = xgb_estimator_fold.predict_proba(_safe_indexing(X, test))
                     if not is_multiclass:
@@ -120,12 +118,12 @@ class XGBoostProblem(Problem):
                     results.append(
                         metric(_safe_indexing(y, test), pred_proba))
                     xgb_models[i] = self._get_booster(xgb_estimator_fold)
-                if tree % 10 == 0 or tree-1 == config[self.early_stopping_key]:
-                    with tune.checkpoint_dir(step=tree) as checkpoint_dir:
-                        path = os.path.join(checkpoint_dir, "checkpoint")
-                        with open(path, "wb") as f:
-                            pickle.dump((xgb_models, tree), f)
+                with tune.checkpoint_dir(step=tree) as checkpoint_dir:
+                    path = os.path.join(checkpoint_dir, "checkpoint")
+                    with open(path, "wb") as f:
+                        pickle.dump((xgb_models, tree), f)
                 tune.report(**{self.metric_name: np.mean(results)})
+        xgboost_trainable.__name__ == f"{self.__class__.__name__}_trainable"
         return xgboost_trainable
 
     @property
@@ -144,7 +142,7 @@ class LightGBMProblem(XGBoostProblem):
     @property
     def config(self) -> Dict[str, Sampler]:
         return {
-            "n_estimators": tune.lograndint(10, 1000),
+            "n_estimators": tune.lograndint(1, 50),
             "num_leaves": tune.lograndint(4, 1000),
             "min_child_samples": tune.lograndint(2, 1+2**7),
             "learning_rate": tune.loguniform(1 / 1024, 1.0),
@@ -158,7 +156,7 @@ class LightGBMProblem(XGBoostProblem):
     @property
     def init_config(self) -> Dict[str, Sampler]:
         return {
-            "n_estimators": 100,
+            "n_estimators": 10,
             "num_leaves": 31,
             "min_child_samples": 20,
             "learning_rate": 0.1,
@@ -171,7 +169,7 @@ class LightGBMProblem(XGBoostProblem):
 
     @property
     def early_stopping_iters(self) -> int:
-        return 400
+        return 50
 
     def _get_estimator(self, config: dict, random_seed: int):
         config = config.copy()

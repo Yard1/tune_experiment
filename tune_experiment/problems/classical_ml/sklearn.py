@@ -19,6 +19,10 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
+from sklearn.pipeline import Pipeline
+from sklearn.compose import make_column_selector, ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
 
 class SklearnProblem(Problem):
     def __init__(self, n_jobs: int):
@@ -40,6 +44,17 @@ class SklearnProblem(Problem):
     def early_stopping_iters(self) -> int:
         return None
 
+    @property
+    def preprocessor(self) -> Pipeline:
+        return Pipeline([("column",
+                          ColumnTransformer([
+                              ('scale', StandardScaler(),
+                               make_column_selector(dtype_exclude="category")),
+                              ('onehot',
+                               OneHotEncoder(drop="if_binary", dtype=np.bool, sparse=False),
+                               make_column_selector(dtype_include="category"))
+                          ]))])
+
     def _get_fit_kwargs(self):
         return {}
 
@@ -49,14 +64,11 @@ class SklearnProblem(Problem):
     @property
     def trainable(self) -> Callable:
         def sklearn_trainable(config: dict,
-                              dataset: pd.DataFrame,
-                              target_column: str,
+                              X,
+                              y,
                               cv_folds: int,
                               random_seed: int,
                               checkpoint_dir: Optional[str] = None):
-            X = dataset.drop(target_column, axis=1)
-            y = dataset[target_column]
-
             estimator = self._get_estimator(config, random_seed)
 
             cv_splitter = StratifiedKFold(n_splits=cv_folds,
@@ -81,6 +93,7 @@ class SklearnProblem(Problem):
                 results.append(metric(_safe_indexing(y, test), pred_proba))
             tune.report(**{self.metric_name: np.mean(results)})
 
+        sklearn_trainable.__name__ == f"{self.__class__.__name__}_trainable"
         return sklearn_trainable
 
     @property
@@ -102,16 +115,16 @@ class LRProblem(SklearnProblem):
         return {
             "C": tune.loguniform(1e-2, 1e2),
             "penalty": tune.choice(["l1", "l2"]),
-            "class_weight": tune.choice(["balanced", None])
+            "class_weight": tune.choice(["balanced", "None"])
         }
 
     @property
     def init_config(self) -> Dict[str, Sampler]:
-        return {"C": 1.0, "penalty": "l2", "class_weight": None}
+        return {"C": 1.0, "penalty": "l2", "class_weight": "None"}
 
     def _get_estimator(self, config: dict, random_seed: int):
         return LogisticRegression(**{
-            k: v
+            k: v if v != "None" else None
             for k, v in config.items() if k in self.config
         },
                                   random_state=random_seed,
@@ -125,16 +138,16 @@ class SVMProblem(SklearnProblem):
             "C": tune.loguniform(1.0, 1e3),
             "gamma": tune.loguniform(1e-4, 1e-3),
             "tol": tune.loguniform(1e-5, 1e-1),
-            "class_weight": tune.choice(["balanced", None])
+            "class_weight": tune.choice(["balanced", "None"])
         }
 
     @property
     def init_config(self) -> Dict[str, Sampler]:
-        return {"C": 1.0, "gamma": 1, "tol": 1e-3, "class_weight": None}
+        return {"C": 1.0, "gamma": 1, "tol": 1e-3, "class_weight": "None"}
 
     def _get_estimator(self, config: dict, random_seed: int):
         return SVC(
-            **{k: v
+            **{k: v if v != "None" else None
                for k, v in config.items() if k in self.config},
             kernel="rbf",
             probability=True,
@@ -189,8 +202,8 @@ class MLPProblem(SklearnProblem):
 
     def _get_estimator(self, config: dict, random_seed: int):
         config = config.copy()
-        config["beta_1"] = (1 - config["beta_1"]) * -1
-        config["beta_2"] = (1 - config["beta_2"]) * -1
+        config["beta_1"] = (1 - config["beta_1"])
+        config["beta_2"] = (1 - config["beta_2"])
         return MLPClassifier(
             **{k: v
                for k, v in config.items() if k in self.config},

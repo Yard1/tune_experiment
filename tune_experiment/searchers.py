@@ -55,7 +55,7 @@ class RandomSearch(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        return BasicVariantGenerator()
+        return BasicVariantGenerator(max_concurrent=max_concurrent)
 
 
 class AxSearcher(Searcher):
@@ -81,6 +81,7 @@ class BayesOptSearcher(Searcher):
 
     designed_for_parallel: bool = False
     supports_categorical: bool = False
+    suitable_for_classical_ml: bool = False
 
 
 class BOHBSearcher(Searcher):
@@ -94,6 +95,7 @@ class BOHBSearcher(Searcher):
         return TuneBOHB(max_concurrent=max_concurrent, seed=random_state)
 
     def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+        max_t = max_t or 1
         return HyperBandForBOHB(max_t=max_t)
 
     uses_partial_results: bool = True
@@ -109,6 +111,9 @@ class DragonflyBanditSearcher(Searcher):
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
         return DragonflySearch(optimizer="bandit", domain="euclidean")
 
+    supports_categorical: bool = False
+    suitable_for_classical_ml: bool = False
+
 
 class DragonflyGeneticSearcher(Searcher):
     def get_searcher_instance(
@@ -120,6 +125,15 @@ class DragonflyGeneticSearcher(Searcher):
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
         return DragonflySearch(optimizer="genetic", domain="cartesian")
 
+    supports_categorical: bool = False
+    suitable_for_classical_ml: bool = False
+
+def _get_low_cost_config(init_config):
+    return {
+        k: v
+        for k, v in init_config.items()
+        if k in ["n_estimators", "learning_rate", "batch_size", "num_leaves"] and isinstance(config.get(k, None), Sampler)
+    }
 
 class BlendSearchSearcher(Searcher):
     def get_searcher_instance(
@@ -129,11 +143,7 @@ class BlendSearchSearcher(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        low_cost_config = {
-            k: v
-            for k, v in init_config.items()
-            if k in ["n_estimators", "learning_rate", "batch_size"]
-        }
+        low_cost_config = _get_low_cost_config(init_config)
 
         class BlendSearchPatched(BlendSearch):
             def set_search_properties(self,
@@ -148,7 +158,8 @@ class BlendSearchSearcher(Searcher):
 
             def suggest(self, trial_id: str) -> Optional[Dict]:
                 ret = super().suggest(trial_id)
-                ret.pop("time_budget_s")
+                if ret:
+                    ret.pop("time_budget_s", None)
                 return ret
 
         return BlendSearchPatched(low_cost_partial_config=low_cost_config,
@@ -165,11 +176,7 @@ class CFOSearcher(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        low_cost_config = {
-            k: v
-            for k, v in init_config.items()
-            if k in ["n_estimators", "learning_rate", "batch_size"]
-        }
+        low_cost_config = _get_low_cost_config(init_config)
 
         class CFOPatched(CFO):
             def set_search_properties(self,
@@ -184,7 +191,8 @@ class CFOSearcher(Searcher):
 
             def suggest(self, trial_id: str) -> Optional[Dict]:
                 ret = super().suggest(trial_id)
-                ret.pop("time_budget_s")
+                if ret:
+                    ret.pop("time_budget_s", None)
                 return ret
 
         return CFOPatched(low_cost_partial_config=low_cost_config,
@@ -218,15 +226,15 @@ class HyperOptSearcher(Searcher):
     designed_for_parallel: bool = False
 
 
-class NevergradSearcher(Searcher):
-    def get_searcher_instance(
-            self,
-            config: Dict[str, Sampler],
-            init_config: Dict[str, Any],
-            time_budget_s: float,
-            random_state: Optional[int] = None,
-            max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        return NevergradSearch(optimizer=NGOpt)
+# class NevergradSearcher(Searcher):
+#     def get_searcher_instance(
+#             self,
+#             config: Dict[str, Sampler],
+#             init_config: Dict[str, Any],
+#             time_budget_s: float,
+#             random_state: Optional[int] = None,
+#             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
+#         return NevergradSearch()
 
 
 class OptunaTPESearcher(Searcher):
@@ -272,19 +280,20 @@ class SkOptSearcher(Searcher):
         return SkOptSearch()
 
 
-class ZOOptSearcher(Searcher):
-    def get_searcher_instance(
-            self,
-            config: Dict[str, Sampler],
-            init_config: Dict[str, Any],
-            time_budget_s: float,
-            random_state: Optional[int] = None,
-            max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        return ZOOptSearch(parallel_num=max_concurrent)
+# class ZOOptSearcher(Searcher):
+#     def get_searcher_instance(
+#             self,
+#             config: Dict[str, Sampler],
+#             init_config: Dict[str, Any],
+#             time_budget_s: float,
+#             random_state: Optional[int] = None,
+#             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
+#         return ZOOptSearch(parallel_num=max_concurrent)
 
 
 class PBTSearcher(RandomSearch):
     def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+        max_t = max_t or 1
         return PopulationBasedTraining()
 
     uses_partial_results: bool = True
@@ -301,15 +310,18 @@ __all__ = ["searcher_registry"]
 temp_globals = globals().copy()
 for k, v in temp_globals.items():
 
-    def get_asha_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
+    def get_asha_scheduler_instance(self,
+                                    max_t: int) -> Optional[TrialScheduler]:
+        max_t = max_t or 1
         return ASHAScheduler(max_t=max_t)
 
     if v is not Searcher and inspect.isclass(v) and issubclass(
-            v,
-            Searcher) and v.get_scheduler_instance == Searcher.get_scheduler_instance:
+            v, Searcher
+    ) and v.get_scheduler_instance == Searcher.get_scheduler_instance:
         asha_name = f"ASHA{v.__name__}"
-        asha_class = type(asha_name, (v, ),
-                          {"get_scheduler_instance": get_asha_scheduler_instance})
+        asha_class = type(
+            asha_name, (v, ),
+            {"get_scheduler_instance": get_asha_scheduler_instance})
         new_globals[asha_name] = asha_class
         __all__.append(k)
         __all__.append(asha_name)
