@@ -60,4 +60,5 @@ def benchmark_classical_ml(data_url: str,
             verbose=1,
             keep_checkpoints_num=1,
             max_failures=2,
+            local_dir="results"
         )
