@@ -128,7 +128,7 @@ class DragonflyGeneticSearcher(Searcher):
     supports_categorical: bool = False
     suitable_for_classical_ml: bool = False
 
-def _get_low_cost_config(init_config):
+def _get_low_cost_config(config, init_config):
     return {
         k: v
         for k, v in init_config.items()
@@ -143,7 +143,7 @@ class BlendSearchSearcher(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        low_cost_config = _get_low_cost_config(init_config)
+        low_cost_config = _get_low_cost_config(config, init_config)
 
         class BlendSearchPatched(BlendSearch):
             def set_search_properties(self,
@@ -176,7 +176,7 @@ class CFOSearcher(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        low_cost_config = _get_low_cost_config(init_config)
+        low_cost_config = _get_low_cost_config(config, init_config)
 
         class CFOPatched(CFO):
             def set_search_properties(self,
