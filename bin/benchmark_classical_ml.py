@@ -12,7 +12,8 @@ if __name__ == "__main__":
     datasets = {v.split("/")[1].split(".")[0]: v for v in datasets}
     problems = {
         v.__name__: v
-        for v in globals() if issubclass(v, Problem) and v is not Problem
+        for v in globals()
+        if isinstance(v, type) and issubclass(v, Problem) and v is not Problem
     }
 
     import argparse
