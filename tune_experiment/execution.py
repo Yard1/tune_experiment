@@ -54,6 +54,7 @@ def benchmark_classical_ml(data_url: str,
                                                     time_budget_s, random_seed,
                                                     max_concurrent)
         name = (f"{problem.__class__.__name__}-{searcher.__class__.__name__}"
+                f"-{data_url.split('/')[-1].split('.')[0]}"
                 f"-{cv_folds}-{random_seed}-{time_budget_s}")
         print(f"Starting tune run {name}")
         analysis = tune.run(problem.trainable_with_parameters(
