@@ -12,6 +12,7 @@ def set_up_s3fs(path: str = "~/results"):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
         shell=True,
+        start_new_session=True,
         creationflags=subprocess.DETACHED_PROCESS
         | subprocess.CREATE_NEW_PROCESS_GROUP)
 
