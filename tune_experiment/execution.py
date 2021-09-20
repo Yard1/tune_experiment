@@ -56,7 +56,7 @@ def benchmark_classical_ml(data_url: str,
         name = (
             f"{problem.__class__.__name__}-{search_alg.__class__.__name__}"
             f"-{scheduler.__class__.__name__ if scheduler else 'FIFOScheduler'}"
-            f"-{cv_folds}-{random_seed}")
+            f"-{cv_folds}-{random_seed}-{time_budget_s}")
         print(f"Starting tune run {name}")
         analysis = tune.run(problem.trainable_with_parameters(
             X=X, y=y, cv_folds=cv_folds, random_seed=random_seed),
