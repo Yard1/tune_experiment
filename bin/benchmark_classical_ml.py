@@ -75,4 +75,5 @@ if __name__ == "__main__":
         problems.values() if args.problem == "all" else [args.problem])
 
     for dataset, problem in combinations:
-        benchmark_classical_ml(dataset, problem(1), **kwargs)
+        benchmark_classical_ml(datasets[dataset], problems[problem](1),
+                               **kwargs)
