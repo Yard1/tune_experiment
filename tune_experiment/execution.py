@@ -61,9 +61,9 @@ def benchmark_classical_ml(data_url: str,
         print(f"Starting tune run {name}")
         results_path = "~/results"
         run_on_every_ray_node(set_up_s3fs, path=results_path)
-        results_path = os.path.expanduser(results_path)
+        results_path_expanded = os.path.expanduser(results_path)
         analysis = tune.run(problem.trainable_with_parameters(
-            X=X, y=y, cv_folds=cv_folds, random_seed=random_seed),
+            X=X, y=y, cv_folds=cv_folds, random_seed=random_seed, results_path=results_path),
                             metric=problem.metric_name,
                             mode=problem.metric_mode,
                             config=config,
@@ -77,10 +77,10 @@ def benchmark_classical_ml(data_url: str,
                             verbose=1,
                             keep_checkpoints_num=1,
                             max_failures=2,
-                            local_dir=results_path,
+                            local_dir=results_path_expanded,
                             sync_config=SyncConfig(sync_to_cloud=False,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
-        with open(os.path.join(results_path, f"{name}_analysis.pickle"),
+        with open(os.path.join(results_path_expanded, f"{name}_analysis.pickle"),
                   "wb") as f:
             pickle.dump(analysis, f)
