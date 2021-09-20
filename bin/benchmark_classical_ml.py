@@ -1,3 +1,6 @@
+# example usage:
+# python bin/benchmark_classical_ml.py "car" LightGBMProblem --max-concurrent 32 --server-address auto --time-budget-s 60
+
 import argparse
 import os
 import ray
@@ -71,8 +74,8 @@ if __name__ == "__main__":
         searcher_name=None if args.searcher == "all" else args.searcher)
 
     combinations = product(
-        datasets.values() if args.dataset == "all" else [args.dataset],
-        problems.values() if args.problem == "all" else [args.problem])
+        datasets.keys() if args.dataset == "all" else [args.dataset],
+        problems.keys() if args.problem == "all" else [args.problem])
 
     for dataset, problem in combinations:
         benchmark_classical_ml(datasets[dataset], problems[problem](1),
