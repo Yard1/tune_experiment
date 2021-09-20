@@ -9,7 +9,7 @@ from tune_experiment.datasets.classical_ml import get_classical_ml_datasets
 
 if __name__ == "__main__":
     datasets = get_classical_ml_datasets()
-    datasets = {v.split("/")[1].split(".")[0]: v for v in datasets}
+    datasets = {v.split("/")[-1].split(".")[0]: v for v in datasets}
     problems = {
         v.__name__: v
         for v in globals()
