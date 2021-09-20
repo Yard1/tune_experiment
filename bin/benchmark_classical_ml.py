@@ -2,7 +2,6 @@ import argparse
 import os
 
 from tune_experiment.execution import benchmark_classical_ml
-from tune_experiment.problems.problem import Problem
 from tune_experiment.problems.classical_ml.gbdt import XGBoostProblem, LightGBMProblem
 from tune_experiment.problems.classical_ml.sklearn import LRProblem, MLPProblem, SVMProblem, KNNProblem
 from tune_experiment.datasets.classical_ml import get_classical_ml_datasets
@@ -12,8 +11,10 @@ if __name__ == "__main__":
     datasets = {v.split("/")[-1].split(".")[0]: v for v in datasets}
     problems = {
         v.__name__: v
-        for v in globals()
-        if isinstance(v, type) and issubclass(v, Problem) and v is not Problem
+        for v in [
+            XGBoostProblem, LightGBMProblem, LRProblem, MLPProblem, SVMProblem,
+            KNNProblem
+        ]
     }
 
     import argparse
