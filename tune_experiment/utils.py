@@ -1,6 +1,7 @@
 import ray
 import subprocess
 import os
+import socket
 
 
 def set_up_s3fs(path: str = "~/results"):
@@ -13,6 +14,11 @@ def set_up_s3fs(path: str = "~/results"):
         stderr=subprocess.STDOUT,
         shell=True,
         start_new_session=True)
+    subprocess.Popen(
+        f"touch '{path}/{socket.gethostname()}'",
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+        shell=True)
 
 
 def run_on_every_ray_node(func, **kwargs):
