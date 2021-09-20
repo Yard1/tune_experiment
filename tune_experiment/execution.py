@@ -79,6 +79,6 @@ def benchmark_classical_ml(data_url: str,
             local_dir="~/results",
             sync_config=SyncConfig(upload_dir="s3://tune-experiment-result",
                                    sync_to_driver=False))
-        with open(os.path.join("results", f"{name}_analysis.pickle"),
+        with open(os.path.join("~/results", f"{name}_analysis.pickle"),
                   "wb") as f:
             pickle.dump(analysis, f)
