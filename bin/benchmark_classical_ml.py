@@ -73,7 +73,7 @@ if __name__ == "__main__":
         for dataset in datasets.values():
             for problem in problems.values():
                 benchmark_classical_ml(dataset, problem(1), **kwargs)
-    elif args.datset == "all":
+    elif args.dataset == "all":
         for dataset in datasets.values():
             benchmark_classical_ml(dataset, problems[args.problem](1),
                                    **kwargs)
