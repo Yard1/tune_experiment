@@ -89,7 +89,7 @@ class Problem(ABC):
         results_path: str
     ):
         return tune.with_parameters(
-            tune.durable(self.get_trainable()),
+            self.get_trainable(),
             X=X,
             y=y,
             cv_folds=cv_folds,
