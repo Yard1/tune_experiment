@@ -8,7 +8,7 @@ def set_up_s3fs(path: str = "~/results"):
     if os.path.exists(path):
         return
     subprocess.Popen(
-        f"mkdir ~/results && nohup s3fs tune-experiment-result '{path}' -o iam_role='auto' -o url='https://s3-us-west-2.amazonaws.com' &",
+        f"mkdir '{path}' && nohup s3fs tune-experiment-result '{path}' -o iam_role='auto' -o url='https://s3-us-west-2.amazonaws.com' &",
         stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
         shell=True,
