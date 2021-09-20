@@ -51,7 +51,9 @@ class SklearnProblem(Problem):
                               ('scale', StandardScaler(),
                                make_column_selector(dtype_exclude="category")),
                               ('onehot',
-                               OneHotEncoder(drop="if_binary", dtype=np.bool, sparse=False),
+                               OneHotEncoder(drop="if_binary",
+                                             dtype=np.bool,
+                                             sparse=False),
                                make_column_selector(dtype_include="category"))
                           ]))])
 
@@ -61,8 +63,7 @@ class SklearnProblem(Problem):
     def _get_estimator(self, config: dict, random_seed: int):
         return
 
-    @property
-    def trainable(self) -> Callable:
+    def get_trainable(self) -> Callable:
         def sklearn_trainable(config: dict,
                               X,
                               y,
@@ -93,7 +94,8 @@ class SklearnProblem(Problem):
                 results.append(metric(_safe_indexing(y, test), pred_proba))
             tune.report(**{self.metric_name: np.mean(results)})
 
-        sklearn_trainable.__name__ == f"{self.__class__.__name__}_trainable"
+        sklearn_trainable.__name__ = f"{self.__class__.__name__}_trainable"
+        sklearn_trainable.__qualname__ = sklearn_trainable.__name__
         return sklearn_trainable
 
     @property
@@ -128,7 +130,8 @@ class LRProblem(SklearnProblem):
             for k, v in config.items() if k in self.config
         },
                                   random_state=random_seed,
-                                  solver="saga")
+                                  solver="saga",
+                                  max_iter=1000)
 
 
 class SVMProblem(SklearnProblem):
@@ -147,8 +150,10 @@ class SVMProblem(SklearnProblem):
 
     def _get_estimator(self, config: dict, random_seed: int):
         return SVC(
-            **{k: v if v != "None" else None
-               for k, v in config.items() if k in self.config},
+            **{
+                k: v if v != "None" else None
+                for k, v in config.items() if k in self.config
+            },
             kernel="rbf",
             probability=True,
             random_state=random_seed,

@@ -16,10 +16,12 @@ from functools import partial
 import xgboost as xgb
 import lightgbm as lgbm
 
+
 def get_xgb_num_trees(bst: xgb.Booster) -> int:
     import json
     data = [json.loads(d) for d in bst.get_dump(dump_format="json")]
     return len(data) // 4
+
 
 class XGBoostProblem(Problem):
     def __init__(self, n_jobs: int):
@@ -62,13 +64,13 @@ class XGBoostProblem(Problem):
         return 50
 
     def _get_estimator(self, config: dict, random_seed: int):
-        return xgb.XGBClassifier(
-                **{k: v
-                   for k, v in config.items() if k in self.config},
-                n_jobs=self.n_jobs,
-                random_state=random_seed,
-                use_label_encoder=False
-            )
+        return xgb.XGBClassifier(**{
+            k: v
+            for k, v in config.items() if k in self.config
+        },
+                                 n_jobs=self.n_jobs,
+                                 random_state=random_seed,
+                                 use_label_encoder=False)
 
     def _get_booster(self, booster: xgb.XGBModel):
         return booster.get_booster()
@@ -76,8 +78,7 @@ class XGBoostProblem(Problem):
     def _get_fit_kwargs(self, init_model: xgb.Booster):
         return {"xgb_model": init_model}
 
-    @property
-    def trainable(self) -> Callable:
+    def get_trainable(self) -> Callable:
         def xgboost_trainable(config: dict,
                               X,
                               y,
@@ -99,9 +100,8 @@ class XGBoostProblem(Problem):
                                           random_state=random_seed)
 
             is_multiclass = len(np.unique(y)) > 2
-            metric = partial(
-                roc_auc_score,
-                multi_class="ovr" if is_multiclass else "raise")
+            metric = partial(roc_auc_score,
+                             multi_class="ovr" if is_multiclass else "raise")
 
             n_trees = config[self.early_stopping_key] - trees_already_boosted
 
@@ -110,20 +110,25 @@ class XGBoostProblem(Problem):
                 for i, train_test in enumerate(cv_splitter.split(X, y)):
                     train, test = train_test
                     xgb_estimator_fold = clone(xgb_estimator)
-                    xgb_estimator_fold.set_params(**{self.early_stopping_key: 10})
-                    xgb_estimator_fold.fit(_safe_indexing(X, train), _safe_indexing(y, train), **self._get_fit_kwargs(xgb_models[i]))
-                    pred_proba = xgb_estimator_fold.predict_proba(_safe_indexing(X, test))
+                    xgb_estimator_fold.set_params(
+                        **{self.early_stopping_key: 10})
+                    xgb_estimator_fold.fit(
+                        _safe_indexing(X, train), _safe_indexing(y, train),
+                        **self._get_fit_kwargs(xgb_models[i]))
+                    pred_proba = xgb_estimator_fold.predict_proba(
+                        _safe_indexing(X, test))
                     if not is_multiclass:
                         pred_proba = pred_proba[:, 1]
-                    results.append(
-                        metric(_safe_indexing(y, test), pred_proba))
+                    results.append(metric(_safe_indexing(y, test), pred_proba))
                     xgb_models[i] = self._get_booster(xgb_estimator_fold)
                 with tune.checkpoint_dir(step=tree) as checkpoint_dir:
                     path = os.path.join(checkpoint_dir, "checkpoint")
                     with open(path, "wb") as f:
                         pickle.dump((xgb_models, tree), f)
                 tune.report(**{self.metric_name: np.mean(results)})
-        xgboost_trainable.__name__ == f"{self.__class__.__name__}_trainable"
+
+        xgboost_trainable.__name__ = f"{self.__class__.__name__}_trainable"
+        xgboost_trainable.__qualname__ = xgboost_trainable.__name__
         return xgboost_trainable
 
     @property
@@ -138,13 +143,14 @@ class XGBoostProblem(Problem):
     def metric_mode(self) -> str:
         return "max"
 
+
 class LightGBMProblem(XGBoostProblem):
     @property
     def config(self) -> Dict[str, Sampler]:
         return {
             "n_estimators": tune.lograndint(1, 50),
             "num_leaves": tune.lograndint(4, 1000),
-            "min_child_samples": tune.lograndint(2, 1+2**7),
+            "min_child_samples": tune.lograndint(2, 1 + 2**7),
             "learning_rate": tune.loguniform(1 / 1024, 1.0),
             "subsample": tune.uniform(0.1, 1.0),
             "log_max_bin": tune.lograndint(3, 11),
@@ -175,11 +181,14 @@ class LightGBMProblem(XGBoostProblem):
         config = config.copy()
         config["max_bin"] = 1 << int(round(config.pop("log_max_bin"))) - 1
         return lgbm.LGBMClassifier(
-                **{k: v
-                   for k, v in config.items() if k in self.config or k == "max_bin"},
-                n_jobs=1,
-                random_state=random_seed,
-            )
+            **{
+                k: v
+                for k, v in config.items()
+                if k in self.config or k == "max_bin"
+            },
+            n_jobs=1,
+            random_state=random_seed,
+        )
 
     def _get_booster(self, booster: lgbm.LGBMModel):
         return booster.booster_

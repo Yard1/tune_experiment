@@ -71,9 +71,8 @@ class Problem(ABC):
     def metric_mode(self) -> str:
         return
 
-    @property
     @abstractmethod
-    def trainable(self) -> Callable:
+    def get_trainable(self) -> Callable:
         return
 
     @property
@@ -89,7 +88,7 @@ class Problem(ABC):
         random_seed: int
     ):
         return tune.with_parameters(
-            self.trainable,
+            self.get_trainable(),
             X=X,
             y=y,
             cv_folds=cv_folds,

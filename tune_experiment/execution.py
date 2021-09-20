@@ -53,9 +53,8 @@ def benchmark_classical_ml(data_url: str,
                                                     problem.init_config,
                                                     time_budget_s, random_seed,
                                                     max_concurrent)
-        name = (
-            f"{problem.__class__.__name__}-{searcher.__class__.__name__}"
-            f"-{cv_folds}-{random_seed}-{time_budget_s}")
+        name = (f"{problem.__class__.__name__}-{searcher.__class__.__name__}"
+                f"-{cv_folds}-{random_seed}-{time_budget_s}")
         print(f"Starting tune run {name}")
         analysis = tune.run(problem.trainable_with_parameters(
             X=X, y=y, cv_folds=cv_folds, random_seed=random_seed),
@@ -69,7 +68,6 @@ def benchmark_classical_ml(data_url: str,
                             time_budget_s=time_budget_s,
                             resources_per_trial=problem.resource_requirements,
                             max_concurrent_trials=max_concurrent,
-                            reuse_actors=True,
                             verbose=1,
                             keep_checkpoints_num=1,
                             max_failures=2,
