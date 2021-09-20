@@ -88,7 +88,7 @@ class Problem(ABC):
         random_seed: int
     ):
         return tune.with_parameters(
-            self.get_trainable(),
+            tune.durable(self.get_trainable()),
             X=X,
             y=y,
             cv_folds=cv_folds,

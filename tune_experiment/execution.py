@@ -3,6 +3,7 @@ import pickle
 import os
 import pandas as pd
 from ray import tune
+from ray.tune.syncer import SyncConfig
 from tune_experiment.problems.problem import Problem
 from tune_experiment.searchers import searcher_registry
 
@@ -57,22 +58,27 @@ def benchmark_classical_ml(data_url: str,
                 f"-{data_url.split('/')[-1].split('.')[0]}"
                 f"-{cv_folds}-{random_seed}-{time_budget_s}")
         print(f"Starting tune run {name}")
-        analysis = tune.run(problem.trainable_with_parameters(
-            X=X, y=y, cv_folds=cv_folds, random_seed=random_seed),
-                            metric=problem.metric_name,
-                            mode=problem.metric_mode,
-                            config=config,
-                            name=name,
-                            search_alg=search_alg,
-                            scheduler=scheduler,
-                            num_samples=-1,
-                            time_budget_s=time_budget_s,
-                            resources_per_trial=problem.resource_requirements,
-                            max_concurrent_trials=max_concurrent,
-                            verbose=1,
-                            keep_checkpoints_num=1,
-                            max_failures=2,
-                            local_dir="results")
+        analysis = tune.run(
+            problem.trainable_with_parameters(X=X,
+                                              y=y,
+                                              cv_folds=cv_folds,
+                                              random_seed=random_seed),
+            metric=problem.metric_name,
+            mode=problem.metric_mode,
+            config=config,
+            name=name,
+            search_alg=search_alg,
+            scheduler=scheduler,
+            num_samples=-1,
+            time_budget_s=time_budget_s,
+            resources_per_trial=problem.resource_requirements,
+            max_concurrent_trials=max_concurrent,
+            verbose=1,
+            keep_checkpoints_num=1,
+            max_failures=2,
+            local_dir="~/results",
+            sync_config=SyncConfig(upload_dir="s3://tune-experiment-result",
+                                   sync_to_driver=False))
         with open(os.path.join("results", f"{name}_analysis.pickle"),
                   "wb") as f:
             pickle.dump(analysis, f)
