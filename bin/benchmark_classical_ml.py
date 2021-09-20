@@ -1,5 +1,6 @@
 import argparse
 import os
+import ray
 
 from tune_experiment.execution import benchmark_classical_ml
 from tune_experiment.problems.classical_ml.gbdt import XGBoostProblem, LightGBMProblem
@@ -59,10 +60,7 @@ if __name__ == "__main__":
     assert args.problem == "all" or args.problem in problems, f"problem must be 'all' or one of {', '.join(problems.keys())}"
     assert os.path.isdir("results"), "'results' folder must exist in localdir"
 
-    if args.server_address:
-        import ray
-
-        ray.init(f"ray://{args.server_address}")
+    ray.init(address=args.server_address)
 
     kwargs = dict(
         time_budget_s=args.time_budget_s,
