@@ -60,7 +60,7 @@ def benchmark_classical_ml(data_url: str,
                 f"-{cv_folds}-{random_seed}-{time_budget_s}")
         print(f"Starting tune run {name}")
         results_path = "~/results"
-        run_on_every_ray_node(set_up_s3fs, results_path)
+        run_on_every_ray_node(set_up_s3fs, path=results_path)
         results_path = os.path.expanduser(results_path)
         analysis = tune.run(problem.trainable_with_parameters(
             X=X, y=y, cv_folds=cv_folds, random_seed=random_seed),
