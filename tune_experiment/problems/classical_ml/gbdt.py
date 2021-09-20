@@ -16,6 +16,8 @@ from functools import partial
 import xgboost as xgb
 import lightgbm as lgbm
 
+from tune_experiment.utils import set_up_s3fs
+
 
 def get_xgb_num_trees(bst: xgb.Booster) -> int:
     import json
@@ -84,7 +86,9 @@ class XGBoostProblem(Problem):
                               y,
                               cv_folds: int,
                               random_seed: int,
+                              results_path: str,
                               checkpoint_dir: Optional[str] = None):
+            set_up_s3fs(results_path)
             if checkpoint_dir:
                 with open(os.path.join(checkpoint_dir, "checkpoint"),
                           "rb") as f:

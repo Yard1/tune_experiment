@@ -1,5 +1,5 @@
 # example usage:
-# python bin/benchmark_classical_ml.py "car" LightGBMProblem --max-concurrent 32 --server-address auto --time-budget-s 60
+# python bin/benchmark_classical_ml.py all MLPProblem --max-concurrent 8 --server-address auto --time-budget-s 60
 
 import argparse
 import os
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     assert args.dataset == "all" or args.dataset in datasets, f"dataset must be 'all' or one of {', '.join(datasets.keys())}"
     assert args.problem == "all" or args.problem in problems, f"problem must be 'all' or one of {', '.join(problems.keys())}"
-    assert os.path.isdir("results"), "'results' folder must exist in localdir"
+    #assert os.path.isdir(os.path.expanduser("~/results")), "'~/results' folder must exist"
 
     ray.init(address=args.server_address)
 

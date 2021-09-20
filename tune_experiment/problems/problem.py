@@ -85,12 +85,14 @@ class Problem(ABC):
         X,
         y,
         cv_folds: int,
-        random_seed: int
+        random_seed: int,
+        results_path: str
     ):
         return tune.with_parameters(
             tune.durable(self.get_trainable()),
             X=X,
             y=y,
             cv_folds=cv_folds,
-            random_seed=random_seed
+            random_seed=random_seed,
+            results_path=results_path
         )

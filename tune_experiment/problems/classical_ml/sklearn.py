@@ -23,6 +23,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_selector, ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
+from tune_experiment.utils import set_up_s3fs
+
 
 class SklearnProblem(Problem):
     def __init__(self, n_jobs: int):
@@ -69,7 +71,9 @@ class SklearnProblem(Problem):
                               y,
                               cv_folds: int,
                               random_seed: int,
+                              results_path: str,
                               checkpoint_dir: Optional[str] = None):
+            set_up_s3fs(results_path)
             estimator = self._get_estimator(config, random_seed)
 
             cv_splitter = StratifiedKFold(n_splits=cv_folds,
