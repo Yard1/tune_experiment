@@ -1,6 +1,7 @@
 import argparse
 import os
 import ray
+from itertools import product
 
 from tune_experiment.execution import benchmark_classical_ml
 from tune_experiment.problems.classical_ml.gbdt import XGBoostProblem, LightGBMProblem
@@ -69,18 +70,9 @@ if __name__ == "__main__":
         cv_folds=args.cv,
         searcher_name=None if args.searcher == "all" else args.searcher)
 
-    if args.dataset == "all" and args.problem == "all":
-        for dataset in datasets.values():
-            for problem in problems.values():
-                benchmark_classical_ml(dataset, problem(1), **kwargs)
-    elif args.dataset == "all":
-        for dataset in datasets.values():
-            benchmark_classical_ml(dataset, problems[args.problem](1),
-                                   **kwargs)
-    elif args.problem == "all":
-        for problem in problems.values():
-            benchmark_classical_ml(datasets[args.dataset], problem(1),
-                                   **kwargs)
-    else:
-        benchmark_classical_ml(datasets[args.dataset],
-                               problems[args.problem](1), **kwargs)
+    combinations = product(
+        datasets.values() if args.dataset == "all" else [args.dataset],
+        problems.values() if args.problem == "all" else [args.problem])
+
+    for dataset, problem in combinations:
+        benchmark_classical_ml(dataset, problem(1), **kwargs)

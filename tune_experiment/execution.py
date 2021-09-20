@@ -1,5 +1,4 @@
 from typing import Optional
-import ray
 import pickle
 import os
 import pandas as pd
@@ -79,4 +78,3 @@ def benchmark_classical_ml(data_url: str,
         with open(os.path.join("results", f"{name}_analysis.pickle"),
                   "wb") as f:
             pickle.dump(analysis, f)
-        return analysis
