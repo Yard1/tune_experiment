@@ -128,12 +128,16 @@ class DragonflyGeneticSearcher(Searcher):
     supports_categorical: bool = False
     suitable_for_classical_ml: bool = False
 
+
 def _get_low_cost_config(config, init_config):
     return {
         k: v
-        for k, v in init_config.items()
-        if k in ["n_estimators", "learning_rate", "batch_size", "num_leaves"] and isinstance(config.get(k, None), Sampler)
+        for k, v in init_config.items() if k in [
+            "n_estimators", "learning_rate", "batch_size", "num_leaves",
+            "learning_rate_init"
+        ] and isinstance(config.get(k, None), Sampler)
     }
+
 
 class BlendSearchSearcher(Searcher):
     def get_searcher_instance(

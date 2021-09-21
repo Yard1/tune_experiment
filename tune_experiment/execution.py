@@ -17,7 +17,7 @@ def benchmark_classical_ml(data_url: str,
                            cv_folds: int = 5,
                            searcher_name: Optional[str] = None):
     print(f"Downloading dataset {data_url}")
-    data = pd.read_parquet(data_url)
+    data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
     print("Dataset downloaded, preprocessing...")
     X = problem.preprocessor.fit_transform(data.drop("target", axis=1))
     y = data["target"]
@@ -63,7 +63,11 @@ def benchmark_classical_ml(data_url: str,
         run_on_every_ray_node(set_up_s3fs, path=results_path)
         results_path_expanded = os.path.expanduser(results_path)
         analysis = tune.run(problem.trainable_with_parameters(
-            X=X, y=y, cv_folds=cv_folds, random_seed=random_seed, results_path=results_path),
+            X=X,
+            y=y,
+            cv_folds=cv_folds,
+            random_seed=random_seed,
+            results_path=results_path),
                             metric=problem.metric_name,
                             mode=problem.metric_mode,
                             config=config,
@@ -81,6 +85,7 @@ def benchmark_classical_ml(data_url: str,
                             sync_config=SyncConfig(sync_to_cloud=False,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
-        with open(os.path.join(results_path_expanded, f"{name}_analysis.pickle"),
-                  "wb") as f:
+        with open(
+                os.path.join(results_path_expanded, f"{name}_analysis.pickle"),
+                "wb") as f:
             pickle.dump(analysis, f)
