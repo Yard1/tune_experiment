@@ -2,6 +2,7 @@ import ray
 import subprocess
 import os
 import socket
+import time
 
 
 def set_up_s3fs(path: str = "~/results"):
@@ -14,6 +15,7 @@ def set_up_s3fs(path: str = "~/results"):
         stderr=subprocess.STDOUT,
         shell=True,
         start_new_session=True)
+    time.sleep(2)
     subprocess.Popen(
         f"touch '{path}/{socket.gethostname()}'",
         stdout=subprocess.DEVNULL,
