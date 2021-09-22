@@ -1,12 +1,14 @@
 from typing import Optional
 import pickle
 import os
+import numpy as np
 import pandas as pd
 from ray import tune
 from ray.tune.syncer import SyncConfig
 from tune_experiment.problems.problem import Problem
 from tune_experiment.searchers import searcher_registry
 from tune_experiment.utils import set_up_s3fs, run_on_every_ray_node
+from sklearn.preprocessing import LabelEncoder
 
 
 def benchmark_classical_ml(data_url: str,
@@ -20,7 +22,7 @@ def benchmark_classical_ml(data_url: str,
     data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
     print("Dataset downloaded, preprocessing...")
     X = problem.preprocessor.fit_transform(data.drop("target", axis=1))
-    y = data["target"]
+    y = pd.Series(LabelEncoder().fit_transform(data["target"]))
     print("Dataset preprocessed.")
 
     if searcher_name is None:
@@ -65,6 +67,7 @@ def benchmark_classical_ml(data_url: str,
         analysis = tune.run(problem.trainable_with_parameters(
             X=X,
             y=y,
+            num_classes=len(np.unique(y)),
             cv_folds=cv_folds,
             random_seed=random_seed,
             results_path=results_path),
@@ -85,6 +88,7 @@ def benchmark_classical_ml(data_url: str,
                             sync_config=SyncConfig(sync_to_cloud=False,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
+        print(analysis.results_df)
         with open(
                 os.path.join(results_path_expanded, f"{name}_analysis.pickle"),
                 "wb") as f:

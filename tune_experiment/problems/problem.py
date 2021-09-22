@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Dict
-import pandas as pd
 from ray import tune
 from ray.tune.sample import Sampler, Categorical
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin, BaseEstimator
+
+
 class DummyTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
         return
@@ -15,6 +16,7 @@ class DummyTransformer(TransformerMixin, BaseEstimator):
 
     def transform(self, X, y=None):
         return X
+
 
 class Problem(ABC):
     def __init__(self):
@@ -80,19 +82,12 @@ class Problem(ABC):
     def resource_requirements(self) -> PlacementGroupFactory:
         return
 
-    def trainable_with_parameters(
-        self,
-        X,
-        y,
-        cv_folds: int,
-        random_seed: int,
-        results_path: str
-    ):
-        return tune.with_parameters(
-            self.get_trainable(),
-            X=X,
-            y=y,
-            cv_folds=cv_folds,
-            random_seed=random_seed,
-            results_path=results_path
-        )
+    def trainable_with_parameters(self, X, y, num_classes: int, cv_folds: int,
+                                  random_seed: int, results_path: str):
+        return tune.with_parameters(self.get_trainable(),
+                                    X=X,
+                                    y=y,
+                                    num_classes=num_classes,
+                                    cv_folds=cv_folds,
+                                    random_seed=random_seed,
+                                    results_path=results_path)

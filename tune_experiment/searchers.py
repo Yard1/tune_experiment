@@ -134,7 +134,7 @@ def _get_low_cost_config(config, init_config):
         k: v
         for k, v in init_config.items() if k in [
             "n_estimators", "learning_rate", "batch_size", "num_leaves",
-            "learning_rate_init"
+            "learning_rate_init", "hidden_layer_sizes"
         ] and isinstance(config.get(k, None), Sampler)
     }
 

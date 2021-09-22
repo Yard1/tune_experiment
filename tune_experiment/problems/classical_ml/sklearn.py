@@ -69,6 +69,7 @@ class SklearnProblem(Problem):
         def sklearn_trainable(config: dict,
                               X,
                               y,
+                              num_classes: int,
                               cv_folds: int,
                               random_seed: int,
                               results_path: str,
@@ -82,6 +83,7 @@ class SklearnProblem(Problem):
 
             is_multiclass = len(np.unique(y)) > 2
             metric = partial(roc_auc_score,
+                             average="weighted",
                              multi_class="ovr" if is_multiclass else "raise")
 
             results = []

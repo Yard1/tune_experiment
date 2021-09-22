@@ -1,17 +1,20 @@
-from tune_experiment.problems.problem import Problem
-from typing import Callable, Dict, Optional
+from tune_experiment.problems.problem import Problem, DummyTransformer
+from typing import Callable, Dict, Optional, Tuple
 from ray import tune
 from ray.tune.sample import Sampler
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 
 import os
 import pandas as pd
+from pandas.api.types import is_categorical_dtype
 import numpy as np
 import pickle
-from sklearn.base import clone
 from sklearn.utils import _safe_indexing
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
+from scipy.special import softmax
 from functools import partial
 import xgboost as xgb
 import lightgbm as lgbm
@@ -23,6 +26,16 @@ def get_xgb_num_trees(bst: xgb.Booster) -> int:
     import json
     data = [json.loads(d) for d in bst.get_dump(dump_format="json")]
     return len(data) // 4
+
+
+def oridinal_transform_column(col: pd.Series):
+    if is_categorical_dtype(col.dtype):
+        col = col.cat.codes
+    return col
+
+
+def ordinal_transform_pandas(X: pd.DataFrame, y=None):
+    return X.apply(oridinal_transform_column)
 
 
 class XGBoostProblem(Problem):
@@ -58,6 +71,11 @@ class XGBoostProblem(Problem):
         }
 
     @property
+    def preprocessor(self) -> Pipeline:
+        return Pipeline([("encode",
+                          FunctionTransformer(ordinal_transform_pandas))])
+
+    @property
     def early_stopping_key(self) -> str:
         return "n_estimators"
 
@@ -65,25 +83,52 @@ class XGBoostProblem(Problem):
     def early_stopping_iters(self) -> int:
         return 50
 
-    def _get_estimator(self, config: dict, random_seed: int):
-        return xgb.XGBClassifier(**{
-            k: v
-            for k, v in config.items() if k in self.config
-        },
-                                 n_jobs=self.n_jobs,
-                                 random_state=random_seed,
-                                 use_label_encoder=False)
+    def _get_params(self, config: dict, random_seed: int,
+                    num_classes: int) -> dict:
+        params = {k: v for k, v in config.items() if k in self.config}
+        default_params = dict(
+            nthread=self.n_jobs,
+            seed=random_seed,
+            objective="multi:softprob"
+            if num_classes > 2 else "binary:logistic",
+            num_class=num_classes,
+            verbosity=0,
+        )
+        if num_classes <= 2:
+            default_params.pop("num_class")
+        return {**default_params, **params}
 
-    def _get_booster(self, booster: xgb.XGBModel):
-        return booster.get_booster()
+    def _get_dataset(self, X, y):
+        return xgb.DMatrix(X, y)
 
-    def _get_fit_kwargs(self, init_model: xgb.Booster):
-        return {"xgb_model": init_model}
+    def _get_eval_metric(self, metric, num_classes: int):
+        def eval_metric(y_score: np.ndarray,
+                        dtrain: xgb.DMatrix) -> Tuple[str, float]:
+            y_true = dtrain.get_label()
+            if num_classes > 2:
+                y_score = softmax(y_score, axis=1)
+            return self.metric_name, metric(y_true, y_score)
+
+        return eval_metric
+
+    def _train(self, params: dict, train: xgb.DMatrix,
+               num_boosting_rounds: int, test: xgb.DMatrix,
+               eval_metric: Callable, evals_result: dict, init_model):
+        params.pop("n_estimators", None)
+        return xgb.train(params,
+                         train,
+                         num_boosting_rounds,
+                         evals=[(test, "test")],
+                         feval=eval_metric,
+                         evals_result=evals_result,
+                         xgb_model=init_model,
+                         verbose_eval=False)
 
     def get_trainable(self) -> Callable:
         def xgboost_trainable(config: dict,
                               X,
                               y,
+                              num_classes: int,
                               cv_folds: int,
                               random_seed: int,
                               results_path: str,
@@ -97,34 +142,37 @@ class XGBoostProblem(Problem):
                 xgb_models = [None] * cv_folds
                 trees_already_boosted = 0
 
-            xgb_estimator = self._get_estimator(config, random_seed)
-
             cv_splitter = StratifiedKFold(n_splits=cv_folds,
                                           shuffle=True,
                                           random_state=random_seed)
 
-            is_multiclass = len(np.unique(y)) > 2
+            is_multiclass = num_classes > 2
             metric = partial(roc_auc_score,
+                             average="weighted",
                              multi_class="ovr" if is_multiclass else "raise")
+            eval_metric = self._get_eval_metric(metric, num_classes)
 
             n_trees = config[self.early_stopping_key] - trees_already_boosted
+            data_per_fold = []
+            for i, train_test in enumerate(cv_splitter.split(X, y)):
+                train, test = train_test
+                data_per_fold.append(
+                    (self._get_dataset(_safe_indexing(X, train),
+                                       _safe_indexing(y, train)),
+                     self._get_dataset(_safe_indexing(X, test),
+                                       _safe_indexing(y, test))))
+
+            params = self._get_params(config, random_seed, num_classes)
 
             for tree in range(n_trees):
                 results = []
-                for i, train_test in enumerate(cv_splitter.split(X, y)):
-                    train, test = train_test
-                    xgb_estimator_fold = clone(xgb_estimator)
-                    xgb_estimator_fold.set_params(
-                        **{self.early_stopping_key: 10})
-                    xgb_estimator_fold.fit(
-                        _safe_indexing(X, train), _safe_indexing(y, train),
-                        **self._get_fit_kwargs(xgb_models[i]))
-                    pred_proba = xgb_estimator_fold.predict_proba(
-                        _safe_indexing(X, test))
-                    if not is_multiclass:
-                        pred_proba = pred_proba[:, 1]
-                    results.append(metric(_safe_indexing(y, test), pred_proba))
-                    xgb_models[i] = self._get_booster(xgb_estimator_fold)
+                for i, data in enumerate(data_per_fold):
+                    train, test = data
+                    evals_result = {}
+                    bst = self._train(params, train, 10, test, eval_metric,
+                                      evals_result, xgb_models[i])
+                    results.append(evals_result["test"][self.metric_name][-1])
+                    xgb_models[i] = bst
                 with tune.checkpoint_dir(step=tree) as checkpoint_dir:
                     path = os.path.join(checkpoint_dir, "checkpoint")
                     with open(path, "wb") as f:
@@ -181,21 +229,54 @@ class LightGBMProblem(XGBoostProblem):
     def early_stopping_iters(self) -> int:
         return 50
 
-    def _get_estimator(self, config: dict, random_seed: int):
+    @property
+    def preprocessor(self) -> Pipeline:
+        return Pipeline([("identity", DummyTransformer())])
+
+    def _get_params(self, config: dict, random_seed: int,
+                    num_classes: int) -> dict:
         config = config.copy()
         config["max_bin"] = 1 << int(round(config.pop("log_max_bin"))) - 1
-        return lgbm.LGBMClassifier(
-            **{
-                k: v
-                for k, v in config.items()
-                if k in self.config or k == "max_bin"
-            },
-            n_jobs=1,
+        params = {
+            k: v
+            for k, v in config.items() if k in self.config or k == "max_bin"
+        }
+        default_params = dict(
+            n_jobs=self.n_jobs,
             random_state=random_seed,
+            objective="multiclass" if num_classes > 2 else "binary",
+            num_class=num_classes,
+            verbose=-1,
         )
+        if num_classes <= 2:
+            default_params.pop("num_class")
+        return {**default_params, **params}
 
-    def _get_booster(self, booster: lgbm.LGBMModel):
-        return booster.booster_
+    def _get_dataset(self, X, y):
+        return lgbm.Dataset(X, y, free_raw_data=False)
 
-    def _get_fit_kwargs(self, init_model: lgbm.Booster):
-        return {"init_model": init_model}
+    def _get_eval_metric(self, metric, num_classes: int):
+        def eval_metric(y_score: np.ndarray,
+                        dtrain: lgbm.Dataset) -> Tuple[str, float, bool]:
+            y_true = dtrain.get_label()
+            if num_classes > 2:
+                y_score = y_score.reshape(num_classes, -1).T
+                y_score = softmax(y_score, axis=1)
+            return self.metric_name, metric(y_true, y_score), True
+
+        return eval_metric
+
+    def _train(self, params: dict, train: xgb.DMatrix,
+               num_boosting_rounds: int, test: xgb.DMatrix,
+               eval_metric: Callable, evals_result: dict, init_model):
+        params.pop("n_estimators", None)
+        return lgbm.train(params,
+                          train,
+                          num_boosting_rounds,
+                          valid_sets=[test],
+                          valid_names=["test"],
+                          feval=eval_metric,
+                          evals_result=evals_result,
+                          init_model=init_model,
+                          verbose_eval=False,
+                          keep_training_booster=True)

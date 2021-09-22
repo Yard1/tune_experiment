@@ -15,12 +15,11 @@ def set_up_s3fs(path: str = "~/results"):
         shell=True,
         start_new_session=True)
     time.sleep(2)
-    import socket
-    subprocess.Popen(
-        f"cd '{path}' && touch '{socket.gethostname()}'",
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-        shell=True)
+    import platform
+    subprocess.Popen(f"cd '{path}' && touch '{platform.node()}'",
+                     stdout=subprocess.DEVNULL,
+                     stderr=subprocess.STDOUT,
+                     shell=True)
 
 
 def run_on_every_ray_node(func, **kwargs):
