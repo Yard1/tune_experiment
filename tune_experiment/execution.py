@@ -1,6 +1,7 @@
 from typing import Optional
 import pickle
 import os
+import gc
 import numpy as np
 import pandas as pd
 from ray import tune
@@ -18,6 +19,7 @@ def benchmark_classical_ml(data_url: str,
                            random_seed: int = 1,
                            cv_folds: int = 5,
                            searcher_name: Optional[str] = None):
+    gc.collect()
     print(f"Downloading dataset {data_url}")
     data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
     print("Dataset downloaded, preprocessing...")
