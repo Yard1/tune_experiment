@@ -5,7 +5,7 @@ import requests
 
 BUCKET_URL = "https://tune-experiment-datasets.s3.us-west-2.amazonaws.com"
 
-def get_classical_ml_datasets() -> List[str]:
+def get_classical_ml_datasets(biggest_first: bool = False) -> List[str]:
     xml = requests.get(BUCKET_URL).text
     root = ET.fromstring(xml)
     datasets = []
@@ -19,6 +19,6 @@ def get_classical_ml_datasets() -> List[str]:
                     dataset[1] = int(child2.text)
             if dataset[0]:
                 datasets.append(dataset)
-    datasets.sort(key=lambda x: x[1])
+    datasets.sort(key=lambda x: x[1], reverse=biggest_first)
     datasets = [f"{BUCKET_URL}/{x[0]}" for x in datasets]
     return datasets

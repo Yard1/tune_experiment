@@ -12,16 +12,6 @@ from tune_experiment.problems.classical_ml.sklearn import LRProblem, MLPProblem,
 from tune_experiment.datasets.classical_ml import get_classical_ml_datasets
 
 if __name__ == "__main__":
-    datasets = get_classical_ml_datasets()
-    datasets = {v.split("/")[-1].split(".")[0]: v for v in datasets}
-    problems = {
-        v.__name__: v
-        for v in [
-            XGBoostProblem, LightGBMProblem, LRProblem, MLPProblem, SVMProblem,
-            KNNProblem
-        ]
-    }
-
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", type=str, help="Dataset name")
@@ -58,8 +48,19 @@ if __name__ == "__main__":
                         required=False,
                         help="The address of server to connect to if using "
                         "Ray Client.")
+    parser.add_argument("--biggest-first",
+                        action="store_true",
+                        help="Start with biggest datasets.")
     args, _ = parser.parse_known_args()
-
+    datasets = get_classical_ml_datasets(args.biggest_first)
+    datasets = {v.split("/")[-1].split(".")[0]: v for v in datasets}
+    problems = {
+        v.__name__: v
+        for v in [
+            XGBoostProblem, LightGBMProblem, LRProblem, MLPProblem, SVMProblem,
+            KNNProblem
+        ]
+    }
     assert args.dataset == "all" or args.dataset in datasets, f"dataset must be 'all' or one of {', '.join(datasets.keys())}"
     assert args.problem == "all" or args.problem in problems, f"problem must be 'all' or one of {', '.join(problems.keys())}"
     #assert os.path.isdir(os.path.expanduser("~/results")), "'~/results' folder must exist"
