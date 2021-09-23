@@ -273,15 +273,15 @@ class OptunaCMAESSearcher(Searcher):
     designed_for_parallel: bool = False
 
 
-class SkOptSearcher(Searcher):
-    def get_searcher_instance(
-            self,
-            config: Dict[str, Sampler],
-            init_config: Dict[str, Any],
-            time_budget_s: float,
-            random_state: Optional[int] = None,
-            max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        return SkOptSearch()
+# class SkOptSearcher(Searcher):
+#     def get_searcher_instance(
+#             self,
+#             config: Dict[str, Sampler],
+#             init_config: Dict[str, Any],
+#             time_budget_s: float,
+#             random_state: Optional[int] = None,
+#             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
+#         return SkOptSearch()
 
 
 # class ZOOptSearcher(Searcher):
