@@ -61,7 +61,7 @@ def benchmark_classical_ml(data_url: str,
                                                     max_concurrent)
         name = (f"{problem.__class__.__name__}-{searcher.__class__.__name__}"
                 f"-{data_url.split('/')[-1].split('.')[0]}"
-                f"-{cv_folds}-{random_seed}-{time_budget_s}")
+                f"-{cv_folds}-{random_seed}-{time_budget_s}-{max_concurrent}")
         print(f"Starting tune run {name}")
         results_path = "~/results"
         run_on_every_ray_node(set_up_s3fs, path=results_path)
