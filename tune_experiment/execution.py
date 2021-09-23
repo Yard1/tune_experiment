@@ -33,9 +33,6 @@ def benchmark_classical_ml(data_url: str,
     else:
         searchers = {searcher_name: searcher_registry[searcher_name]}
 
-    print(searcher_registry)
-    1 / 0
-
     for name, searcher in searchers.items():
         if not (searcher.supports_categorical
                 and searcher.suitable_for_classical_ml):
