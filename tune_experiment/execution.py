@@ -18,7 +18,8 @@ def benchmark_classical_ml(data_url: str,
                            max_concurrent: int = 1,
                            random_seed: int = 1,
                            cv_folds: int = 5,
-                           searcher_name: Optional[str] = None):
+                           searcher_name: Optional[str] = None,
+                           force_redo: bool = False):
     gc.collect()
     print(f"Downloading dataset {data_url}")
     data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
@@ -31,6 +32,9 @@ def benchmark_classical_ml(data_url: str,
         searchers = searcher_registry
     else:
         searchers = {searcher_name: searcher_registry[searcher_name]}
+
+    print(searcher_registry)
+    1 / 0
 
     for name, searcher in searchers.items():
         if not (searcher.supports_categorical
@@ -62,10 +66,15 @@ def benchmark_classical_ml(data_url: str,
         name = (f"{problem.__class__.__name__}-{searcher.__class__.__name__}"
                 f"-{data_url.split('/')[-1].split('.')[0]}"
                 f"-{cv_folds}-{random_seed}-{time_budget_s}-{max_concurrent}")
-        print(f"Starting tune run {name}")
         results_path = "~/results"
         run_on_every_ray_node(set_up_s3fs, path=results_path)
         results_path_expanded = os.path.expanduser(results_path)
+        save_path = os.path.join(results_path_expanded,
+                                 f"{name}_analysis.pickle")
+        if not force_redo and os.path.exists(save_path):
+            print(f"Skipping tune run {name}")
+            continue
+        print(f"Starting tune run {name}")
         analysis = tune.run(problem.trainable_with_parameters(
             X=X,
             y=y,
@@ -92,7 +101,5 @@ def benchmark_classical_ml(data_url: str,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
         print(analysis.results_df)
-        with open(
-                os.path.join(results_path_expanded, f"{name}_analysis.pickle"),
-                "wb") as f:
+        with open(save_path, "wb") as f:
             pickle.dump(analysis, f)

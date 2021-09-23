@@ -56,6 +56,9 @@ if __name__ == "__main__":
     parser.add_argument("--biggest-first",
                         action="store_true",
                         help="Start with biggest datasets.")
+    parser.add_argument("--force-redo",
+                        action="store_true",
+                        help="Start with biggest datasets.")
     args, _ = parser.parse_known_args()
     datasets = get_classical_ml_datasets(args.biggest_first)
     datasets = {v.split("/")[-1].split(".")[0]: v for v in datasets}
@@ -77,7 +80,8 @@ if __name__ == "__main__":
         max_concurrent=args.max_concurrent,
         random_seed=args.random_seed,
         cv_folds=args.cv,
-        searcher_name=None if args.searcher == "all" else args.searcher)
+        searcher_name=None if args.searcher == "all" else args.searcher,
+        force_redo=args.force_redo)
 
     combinations = product(
         datasets.keys() if args.dataset == "all" else [args.dataset],
