@@ -1,5 +1,5 @@
 # example usage:
-# python bin/benchmark_classical_ml.py all MLPProblem --max-concurrent 8 --server-address auto --time-budget-s 60
+# python bin/benchmark_classical_ml.py all LightGBMProblem --max-concurrent 8 --server-address auto --time-budget-s 60 --biggest-first
 
 import argparse
 import os
@@ -42,6 +42,11 @@ if __name__ == "__main__":
                         type=int,
                         default=5,
                         help="Number of cv folds")
+    parser.add_argument("--n-jobs",
+                        required=False,
+                        type=int,
+                        default=1,
+                        help="Number of CPU threads per trial")
     parser.add_argument("--server-address",
                         type=str,
                         default=None,
@@ -79,5 +84,5 @@ if __name__ == "__main__":
         problems.keys() if args.problem == "all" else [args.problem])
 
     for dataset, problem in combinations:
-        benchmark_classical_ml(datasets[dataset], problems[problem](1),
-                               **kwargs)
+        benchmark_classical_ml(datasets[dataset],
+                               problems[problem](args.n_jobs), **kwargs)
