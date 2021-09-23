@@ -319,17 +319,16 @@ for k, v in temp_globals.items():
         max_t = max_t or 1
         return ASHAScheduler(max_t=max_t)
 
-    if v is not Searcher and inspect.isclass(v) and issubclass(
-            v, Searcher
-    ) and v.get_scheduler_instance == Searcher.get_scheduler_instance:
-        asha_name = f"ASHA{v.__name__}"
-        asha_class = type(
-            asha_name, (v, ),
-            {"get_scheduler_instance": get_asha_scheduler_instance})
-        new_globals[asha_name] = asha_class
+    if v is not Searcher and inspect.isclass(v) and issubclass(v, Searcher):
+        if v.get_scheduler_instance == Searcher.get_scheduler_instance:
+            asha_name = f"ASHA{v.__name__}"
+            asha_class = type(
+                asha_name, (v, ),
+                {"get_scheduler_instance": get_asha_scheduler_instance})
+            new_globals[asha_name] = asha_class
+            __all__.append(asha_name)
+            searcher_registry[asha_name] = asha_class
         __all__.append(k)
-        __all__.append(asha_name)
         searcher_registry[k] = v
-        searcher_registry[asha_name] = asha_class
 
 globals().update(new_globals)
