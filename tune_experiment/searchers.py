@@ -92,7 +92,7 @@ class BOHBSearcher(Searcher):
             time_budget_s: float,
             random_state: Optional[int] = None,
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
-        return TuneBOHB(max_concurrent=max_concurrent, seed=random_state)
+        return TuneBOHB(seed=random_state)
 
     def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         max_t = max_t or 1
