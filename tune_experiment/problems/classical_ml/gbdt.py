@@ -93,6 +93,7 @@ class XGBoostProblem(Problem):
             if num_classes > 2 else "binary:logistic",
             num_class=num_classes,
             verbosity=0,
+            validate_parameters=False,
         )
         if num_classes <= 2:
             default_params.pop("num_class")
