@@ -4,6 +4,7 @@ import os
 import gc
 import numpy as np
 import pandas as pd
+import shutil
 from ray import tune
 from ray.tune.syncer import SyncConfig
 from tune_experiment.problems.problem import Problem
@@ -21,6 +22,7 @@ def benchmark_classical_ml(data_url: str,
                            searcher_name: Optional[str] = None,
                            force_redo: bool = False):
     gc.collect()
+
     print(f"Downloading dataset {data_url}")
     data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
     print("Dataset downloaded, preprocessing...")
@@ -100,3 +102,4 @@ def benchmark_classical_ml(data_url: str,
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
+        shutil.rmtree(os.path.join(results_path_expanded, name))
