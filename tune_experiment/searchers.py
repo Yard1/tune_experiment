@@ -130,13 +130,18 @@ class DragonflyGeneticSearcher(Searcher):
 
 
 def _get_low_cost_config(config, init_config):
-    return {
+    conf = {
         k: v
         for k, v in init_config.items() if k in [
             "n_estimators", "learning_rate", "batch_size", "num_leaves",
-            "learning_rate_init", "hidden_layer_sizes"
+            "learning_rate_init", "hidden_layer_sizes", "max_depth"
         ] and isinstance(config.get(k, None), Sampler)
     }
+    if "n_estimators" in conf:
+        conf["n_estimators"] = 1
+    if "num_leaves" in conf:
+        conf["num_leaves"] = 4
+    return conf
 
 
 class BlendSearchSearcher(Searcher):
