@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 import pandas as pd
 import inspect
 from ray import tune
-from ray.tune.sample import Sampler, Categorical
+from ray.tune.sample import Domain, Categorical
 from ray.tune.suggest import Searcher, SearchAlgorithm
 from ray.tune.suggest.ax import AxSearch
 from ray.tune.suggest.bayesopt import BayesOptSearch
@@ -28,7 +28,7 @@ class Searcher(ABC):
     @abstractmethod
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -50,7 +50,7 @@ class Searcher(ABC):
 class RandomSearch(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -61,7 +61,7 @@ class RandomSearch(Searcher):
 class AxSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -72,7 +72,7 @@ class AxSearcher(Searcher):
 class BayesOptSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -87,7 +87,7 @@ class BayesOptSearcher(Searcher):
 class BOHBSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -104,7 +104,7 @@ class BOHBSearcher(Searcher):
 class DragonflyBanditSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -118,7 +118,7 @@ class DragonflyBanditSearcher(Searcher):
 class DragonflyGeneticSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -135,7 +135,7 @@ def _get_low_cost_config(config, init_config):
         for k, v in init_config.items() if k in [
             "n_estimators", "learning_rate", "batch_size", "num_leaves",
             "learning_rate_init", "hidden_layer_sizes", "max_depth"
-        ]
+        ] and isinstance(config.get(k, None), Domain)
     }
     if "n_estimators" in conf:
         conf["n_estimators"] = 1
@@ -149,7 +149,7 @@ def _get_low_cost_config(config, init_config):
 class BlendSearchSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -182,7 +182,7 @@ class BlendSearchSearcher(Searcher):
 class CFOSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -215,7 +215,7 @@ class CFOSearcher(Searcher):
 class HEBOSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -227,7 +227,7 @@ class HEBOSearcher(Searcher):
 class HyperOptSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -240,7 +240,7 @@ class HyperOptSearcher(Searcher):
 # class NevergradSearcher(Searcher):
 #     def get_searcher_instance(
 #             self,
-#             config: Dict[str, Sampler],
+#             config: Dict[str, Domain],
 #             init_config: Dict[str, Any],
 #             time_budget_s: float,
 #             random_state: Optional[int] = None,
@@ -251,7 +251,7 @@ class HyperOptSearcher(Searcher):
 class OptunaTPESearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -267,7 +267,7 @@ class OptunaTPESearcher(Searcher):
 class OptunaCMAESSearcher(Searcher):
     def get_searcher_instance(
             self,
-            config: Dict[str, Sampler],
+            config: Dict[str, Domain],
             init_config: Dict[str, Any],
             time_budget_s: float,
             random_state: Optional[int] = None,
@@ -283,18 +283,17 @@ class OptunaCMAESSearcher(Searcher):
 # class SkOptSearcher(Searcher):
 #     def get_searcher_instance(
 #             self,
-#             config: Dict[str, Sampler],
+#             config: Dict[str, Domain],
 #             init_config: Dict[str, Any],
 #             time_budget_s: float,
 #             random_state: Optional[int] = None,
 #             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
 #         return SkOptSearch()
 
-
 # class ZOOptSearcher(Searcher):
 #     def get_searcher_instance(
 #             self,
-#             config: Dict[str, Sampler],
+#             config: Dict[str, Domain],
 #             init_config: Dict[str, Any],
 #             time_budget_s: float,
 #             random_state: Optional[int] = None,
