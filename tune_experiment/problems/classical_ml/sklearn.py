@@ -3,7 +3,7 @@ from typing import Callable, Dict, Optional
 import pandas as pd
 from tune_experiment.problems.problem import Problem
 from ray import tune
-from ray.tune.sample import Sampler
+from ray.tune.sample import Domain
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 
 import pandas as pd
@@ -31,11 +31,11 @@ class SklearnProblem(Problem):
         self.n_jobs = n_jobs
 
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return
 
     @property
@@ -119,7 +119,7 @@ class SklearnProblem(Problem):
 
 class LRProblem(SklearnProblem):
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "C": tune.loguniform(1e-2, 1e2),
             "penalty": tune.choice(["l1", "l2"]),
@@ -127,7 +127,7 @@ class LRProblem(SklearnProblem):
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {"C": 1.0, "penalty": "l2", "class_weight": "None"}
 
     def _get_estimator(self, config: dict, random_seed: int):
@@ -142,7 +142,7 @@ class LRProblem(SklearnProblem):
 
 class SVMProblem(SklearnProblem):
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "C": tune.loguniform(1.0, 1e3),
             "gamma": tune.loguniform(1e-4, 1e-3),
@@ -151,7 +151,7 @@ class SVMProblem(SklearnProblem):
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {"C": 1.0, "gamma": 1, "tol": 1e-3, "class_weight": "None"}
 
     def _get_estimator(self, config: dict, random_seed: int):
@@ -168,14 +168,14 @@ class SVMProblem(SklearnProblem):
 
 class KNNProblem(SklearnProblem):
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "n_neighbors": tune.randint(1, 25),
             "p": tune.randint(1, 4),
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {"n_neighbors": 5, "p": 2}
 
     def _get_estimator(self, config: dict, random_seed: int):
@@ -186,7 +186,7 @@ class KNNProblem(SklearnProblem):
 
 class MLPProblem(SklearnProblem):
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "hidden_layer_sizes": tune.randint(50, 200),
             "alpha": tune.loguniform(1e-5, 1e1),
@@ -199,7 +199,7 @@ class MLPProblem(SklearnProblem):
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {
             "hidden_layer_sizes": 100,
             "alpha": 0.0001,

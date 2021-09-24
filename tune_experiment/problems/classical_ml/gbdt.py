@@ -1,7 +1,7 @@
 from tune_experiment.problems.problem import Problem, DummyTransformer
 from typing import Callable, Dict, Optional, Tuple
 from ray import tune
-from ray.tune.sample import Sampler
+from ray.tune.sample import Domain
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 
 import os
@@ -43,7 +43,7 @@ class XGBoostProblem(Problem):
         self.n_jobs = n_jobs
 
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "n_estimators": tune.lograndint(1, 50),
             "max_depth": tune.randint(1, 10),
@@ -57,7 +57,7 @@ class XGBoostProblem(Problem):
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {
             "n_estimators": 10,
             "max_depth": 6,
@@ -199,7 +199,7 @@ class XGBoostProblem(Problem):
 
 class LightGBMProblem(XGBoostProblem):
     @property
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return {
             "n_estimators": tune.lograndint(1, 50),
             "num_leaves": tune.lograndint(4, 1000),
@@ -213,7 +213,7 @@ class LightGBMProblem(XGBoostProblem):
         }
 
     @property
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return {
             "n_estimators": 10,
             "num_leaves": 31,

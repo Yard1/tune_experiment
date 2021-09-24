@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Dict
 from ray import tune
-from ray.tune.sample import Sampler, Categorical
+from ray.tune.sample import Domain, Categorical
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin, BaseEstimator
@@ -32,11 +32,11 @@ class Problem(ABC):
 
     @property
     @abstractmethod
-    def config(self) -> Dict[str, Sampler]:
+    def config(self) -> Dict[str, Domain]:
         return
 
     @property
-    def config_early_stopping(self) -> Dict[str, Sampler]:
+    def config_early_stopping(self) -> Dict[str, Domain]:
         if self.early_stopping_key:
             config = self.config.copy()
             config[self.early_stopping_key] = self.early_stopping_iters
@@ -46,7 +46,7 @@ class Problem(ABC):
 
     @property
     @abstractmethod
-    def init_config(self) -> Dict[str, Sampler]:
+    def init_config(self) -> Dict[str, Domain]:
         return
 
     @property
