@@ -4,7 +4,7 @@ import os
 import gc
 import numpy as np
 import pandas as pd
-import shutil
+import subprocess
 from ray import tune
 from ray.tune.syncer import SyncConfig
 from tune_experiment.problems.problem import Problem
@@ -102,4 +102,8 @@ def benchmark_classical_ml(data_url: str,
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
-        shutil.rmtree(os.path.join(results_path_expanded, name))
+        process = subprocess.Popen(f"rm -rf '{os.path.join(results_path_expanded, name)}'",
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT,
+                        shell=True)
+        process.wait()
