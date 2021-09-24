@@ -141,6 +141,8 @@ def _get_low_cost_config(config, init_config):
         conf["n_estimators"] = 1
     if "num_leaves" in conf:
         conf["num_leaves"] = 4
+    if "max_depth" in conf:
+        conf["max_depth"] = 3
     return conf
 
 
