@@ -50,7 +50,7 @@ class SklearnProblem(Problem):
     def get_preprocessor(self, data: pd.DataFrame) -> Pipeline:
         cat_columns = list(data.select_dtypes("category").columns)
         num_categories = sum(len(data[col].unique()) for col in cat_columns)
-        if num_categories < 700:
+        if num_categories < 20000:
             return Pipeline([
                 ("column",
                  ColumnTransformer([

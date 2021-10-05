@@ -26,8 +26,8 @@ def benchmark_classical_ml(data_url: str,
     print(f"Downloading dataset {data_url}")
     data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
     print("Dataset downloaded, preprocessing...")
-    X = problem.get_preprocessor(data).fit_transform(data.drop("target", axis=1))
     y = pd.Series(LabelEncoder().fit_transform(data["target"]))
+    X = problem.get_preprocessor(data).fit_transform(data.drop("target", axis=1), y)
     print("Dataset preprocessed.")
 
     if searcher_name is None:
