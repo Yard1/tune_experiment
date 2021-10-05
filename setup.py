@@ -8,6 +8,6 @@ setup(
     author="Ray Team",
     description="Tune experiment",
     url="https://github.com/Yard1/tune_experiment",
-    install_requires=["ray[tune]"],
+    install_requires=["ray[tune]", "category_encoders"],
     scripts=list(glob.glob("bin/*"))
 )
