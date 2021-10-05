@@ -22,9 +22,16 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_selector, ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.preprocessing import FunctionTransformer
 from category_encoders import TargetEncoder
 
 from tune_experiment.utils import set_up_s3fs
+
+
+def drop_all_na_pandas(X: pd.DataFrame, y=None):
+    return X.dropna(axis=1, how="all")
 
 
 class SklearnProblem(Problem):
@@ -52,26 +59,40 @@ class SklearnProblem(Problem):
         num_categories = sum(len(data[col].unique()) for col in cat_columns)
         if num_categories < 20000:
             return Pipeline([
+                ("dropna", FunctionTransformer(drop_all_na_pandas)),
                 ("column",
                  ColumnTransformer([
-                     ("scale", StandardScaler(),
+                     ("numerical",
+                      Pipeline([("impute", SimpleImputer()),
+                                ("scale", StandardScaler())]),
                       make_column_selector(dtype_exclude="category")),
-                     ("onehot",
-                      OneHotEncoder(drop="if_binary",
-                                    dtype=np.bool,
-                                    sparse=False),
-                      make_column_selector(dtype_include="category"))
+                     ("categorical",
+                      Pipeline([
+                          ("impute", SimpleImputer(strategy="most_frequent")),
+                          (
+                              "encoder",
+                              OneHotEncoder(drop="if_binary",
+                                            dtype=np.bool,
+                                            sparse=False),
+                          )
+                      ]), make_column_selector(dtype_include="category"))
                  ]))
             ])
         else:
-            return Pipeline([("encoder",
-                              TargetEncoder(cols=cat_columns,
-                                            drop_invariant=True,
-                                            smoothing=300)),
-                             (
-                                 "scale",
-                                 StandardScaler(),
-                             )])
+            return Pipeline([
+                ("dropna", FunctionTransformer(drop_all_na_pandas)),
+                ("column",
+                 ColumnTransformer([
+                     ("numerical", SimpleImputer(),
+                      make_column_selector(dtype_exclude="category")),
+                     ("categorical",
+                      TargetEncoder(drop_invariant=True, smoothing=300),
+                      make_column_selector(dtype_include="category"))
+                 ])), (
+                     "scale",
+                     StandardScaler(),
+                 )
+            ])
 
     def _get_fit_kwargs(self):
         return {}
