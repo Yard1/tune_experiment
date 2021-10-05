@@ -70,8 +70,7 @@ class XGBoostProblem(Problem):
             "reg_lambda": 1 / 1024,
         }
 
-    @property
-    def preprocessor(self) -> Pipeline:
+    def get_preprocessor(self, data: pd.DataFrame) -> Pipeline:
         return Pipeline([("encode",
                           FunctionTransformer(ordinal_transform_pandas))])
 
@@ -230,8 +229,7 @@ class LightGBMProblem(XGBoostProblem):
     def early_stopping_iters(self) -> int:
         return 50
 
-    @property
-    def preprocessor(self) -> Pipeline:
+    def get_preprocessor(self, data: pd.DataFrame) -> Pipeline:
         return Pipeline([("identity", DummyTransformer())])
 
     def _get_params(self, config: dict, random_seed: int,

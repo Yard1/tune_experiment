@@ -279,3 +279,4 @@ yapf==0.31.0
 yarl==1.6.3
 zict==2.0.0
 zoopt==0.4.1
+category_encoders

@@ -22,6 +22,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_selector, ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from category_encoders import TargetEncoder
 
 from tune_experiment.utils import set_up_s3fs
 
@@ -46,18 +47,31 @@ class SklearnProblem(Problem):
     def early_stopping_iters(self) -> int:
         return None
 
-    @property
-    def preprocessor(self) -> Pipeline:
-        return Pipeline([("column",
-                          ColumnTransformer([
-                              ('scale', StandardScaler(),
-                               make_column_selector(dtype_exclude="category")),
-                              ('onehot',
-                               OneHotEncoder(drop="if_binary",
-                                             dtype=np.bool,
-                                             sparse=False),
-                               make_column_selector(dtype_include="category"))
-                          ]))])
+    def get_preprocessor(self, data: pd.DataFrame) -> Pipeline:
+        cat_columns = list(data.select_dtypes("category").columns)
+        num_categories = sum(len(data[col].unique()) for col in cat_columns)
+        if num_categories < 700:
+            return Pipeline([
+                ("column",
+                 ColumnTransformer([
+                     ("scale", StandardScaler(),
+                      make_column_selector(dtype_exclude="category")),
+                     ("onehot",
+                      OneHotEncoder(drop="if_binary",
+                                    dtype=np.bool,
+                                    sparse=False),
+                      make_column_selector(dtype_include="category"))
+                 ]))
+            ])
+        else:
+            return Pipeline([("encoder",
+                              TargetEncoder(cols=cat_columns,
+                                            drop_invariant=True,
+                                            smoothing=300)),
+                             (
+                                 "scale",
+                                 StandardScaler(),
+                             )])
 
     def _get_fit_kwargs(self):
         return {}

@@ -5,7 +5,7 @@ from ray.tune.sample import Domain, Categorical
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin, BaseEstimator
-
+import pandas as pd
 
 class DummyTransformer(TransformerMixin, BaseEstimator):
     def __init__(self):
@@ -26,8 +26,7 @@ class Problem(ABC):
     def name(self) -> str:
         return self.__class__.__name__
 
-    @property
-    def preprocessor(self) -> Pipeline:
+    def get_preprocessor(self, data: pd.DataFrame) -> Pipeline:
         return Pipeline([("identity", DummyTransformer())])
 
     @property
