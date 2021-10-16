@@ -1,6 +1,7 @@
 from typing import Optional
 import pickle
 import os
+import shutil
 import gc
 import numpy as np
 import pandas as pd
@@ -102,8 +103,4 @@ def benchmark_classical_ml(data_url: str,
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
-        process = subprocess.Popen(f"rm -rf '{os.path.join(results_path_expanded, name)}'",
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.STDOUT,
-                        shell=True)
-        process.wait()
+        shutil.rmtree(results_path_expanded)
