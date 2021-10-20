@@ -107,4 +107,4 @@ def benchmark_classical_ml(data_url: str,
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
-        shutil.rmtree(save_path)
+        shutil.rmtree(os.path.join(results_path_expanded, name))
