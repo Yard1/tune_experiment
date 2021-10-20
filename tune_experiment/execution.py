@@ -107,4 +107,7 @@ def benchmark_classical_ml(data_url: str,
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
-        shutil.rmtree(results_path_expanded)
+        subprocess.Popen(
+            f"rm -rf '{results_path_expanded}'",
+            shell=True,
+            start_new_session=True)
