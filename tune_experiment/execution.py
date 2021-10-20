@@ -13,6 +13,14 @@ from tune_experiment.searchers import searcher_registry
 from tune_experiment.utils import set_up_s3fs, run_on_every_ray_node
 from sklearn.preprocessing import LabelEncoder
 
+def _get_data(data_url, problem):
+    print(f"Downloading dataset {data_url}")
+    data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
+    print("Dataset downloaded, preprocessing...")
+    y = pd.Series(LabelEncoder().fit_transform(data["target"]))
+    X = problem.get_preprocessor(data).fit_transform(data.drop("target", axis=1), y)
+    print("Dataset preprocessed.")
+    return data, X, y
 
 def benchmark_classical_ml(data_url: str,
                            problem: Problem,
@@ -23,13 +31,7 @@ def benchmark_classical_ml(data_url: str,
                            searcher_name: Optional[str] = None,
                            force_redo: bool = False):
     gc.collect()
-
-    print(f"Downloading dataset {data_url}")
-    data = pd.read_parquet(data_url).select_dtypes(exclude=['object'])
-    print("Dataset downloaded, preprocessing...")
-    y = pd.Series(LabelEncoder().fit_transform(data["target"]))
-    X = problem.get_preprocessor(data).fit_transform(data.drop("target", axis=1), y)
-    print("Dataset preprocessed.")
+    data, X, y = None, None, None
 
     if searcher_name is None:
         searchers = searcher_registry
@@ -75,6 +77,8 @@ def benchmark_classical_ml(data_url: str,
             print(f"Skipping tune run {name}")
             continue
         print(f"Starting tune run {name}")
+        if not data:
+            data, X, y = _get_data(data_url, problem)
         analysis = tune.run(problem.trainable_with_parameters(
             X=X,
             y=y,
