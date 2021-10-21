@@ -65,7 +65,7 @@ if __name__ == "__main__":
     problems = {
         v.__name__: v
         for v in [
-            XGBoostProblem, LightGBMProblem, LRProblem, MLPProblem, SVMProblem,
+            XGBoostProblem, LightGBMProblem, LRProblem, MLPProblem, #SVMProblem,
             KNNProblem
         ]
     }
