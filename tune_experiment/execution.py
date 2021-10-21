@@ -77,7 +77,7 @@ def benchmark_classical_ml(data_url: str,
             print(f"Skipping tune run {name}")
             continue
         print(f"Starting tune run {name}")
-        if not data:
+        if data is None:
             data, X, y = _get_data(data_url, problem)
         analysis = tune.run(problem.trainable_with_parameters(
             X=X,
