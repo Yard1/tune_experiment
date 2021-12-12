@@ -101,7 +101,7 @@ def benchmark_classical_ml(data_url: str,
                             max_failures=2,
                             raise_on_failed_trial=False,
                             local_dir=results_path_expanded,
-                            # resume=os.path.exists(os.path.join(results_path_expanded, name)),
+                            resume=os.path.exists(os.path.join(results_path_expanded, name)),
                             sync_config=SyncConfig(sync_to_cloud=False,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
