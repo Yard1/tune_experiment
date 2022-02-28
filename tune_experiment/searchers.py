@@ -333,7 +333,7 @@ for k, v in temp_globals.items():
     def get_asha_scheduler_instance(self,
                                     max_t: int) -> Optional[TrialScheduler]:
         max_t = max_t or 1
-        return ASHAScheduler(max_t=max_t)
+        return ASHAScheduler(max_t=max_t, grace_period=2)
 
     if v is not Searcher and inspect.isclass(v) and issubclass(v, Searcher):
         if v.get_scheduler_instance == Searcher.get_scheduler_instance:

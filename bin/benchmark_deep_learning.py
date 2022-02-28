@@ -67,8 +67,7 @@ if __name__ == "__main__":
         searcher_name=None if args.searcher == "all" else args.searcher,
         force_redo=args.force_redo)
 
-    combinations = product(
-        problems.keys() if args.problem == "all" else [args.problem])
+    combinations = problems.keys() if args.problem == "all" else [args.problem]
 
-    for dataset, problem in combinations:
+    for problem in combinations:
         benchmark_deep_learning(problems[problem](args.n_jobs), **kwargs)

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import subprocess
 from ray import tune
+from ray.tune.progress_reporter import CLIReporter
 from ray.tune.syncer import SyncConfig
 from tune_experiment.problems.deep_learning.cifar import CIFARProblem
 from tune_experiment.problems.problem import Problem
@@ -165,6 +166,8 @@ def benchmark_deep_learning(problem: CIFARProblem,
             print(f"Skipping tune run {name}")
             continue
         print(f"Starting tune run {name}")
+        reporter = CLIReporter()
+        reporter.add_metric_column("loss", "loss")
         analysis = tune.run(problem.trainable_with_parameters(),
                             metric=problem.metric_name,
                             mode=problem.metric_mode,
@@ -179,14 +182,15 @@ def benchmark_deep_learning(problem: CIFARProblem,
                             verbose=1,
                             keep_checkpoints_num=1,
                             max_failures=2,
+                            #fail_fast=True,
                             raise_on_failed_trial=False,
-                            local_dir=results_path_expanded,
-                            resume=os.path.exists(
-                                os.path.join(results_path_expanded, name)),
+                            local_dir=os.path.expanduser("~/ray_results"),
+                            progress_reporter=reporter,
+                            resume="AUTO",
                             sync_config=SyncConfig(sync_to_cloud=False,
                                                    sync_on_checkpoint=False,
                                                    sync_to_driver=False))
         print(analysis.results_df)
         with open(save_path, "wb") as f:
             pickle.dump(analysis, f)
-        shutil.rmtree(os.path.join(results_path_expanded, name))
+        shutil.rmtree(os.path.expanduser("~/ray_results"))

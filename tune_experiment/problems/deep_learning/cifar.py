@@ -155,7 +155,11 @@ class CIFARProblem(Problem):
 
     @property
     def early_stopping_key(self) -> str:
-        return "training_iteration"
+        return "epochs"
+
+    @property
+    def early_stopping_iters(self) -> int:
+        return 25
 
     def get_trainable(self) -> Callable:
         trainer = Trainer("torch", num_workers=self.n_gpus, use_gpu=True)
