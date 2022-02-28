@@ -290,6 +290,7 @@ class SkOptSearcher(Searcher):
             max_concurrent: int = 10) -> Union[SearchAlgorithm, Searcher]:
         return SkOptSearch()
 
+
 # class ZOOptSearcher(Searcher):
 #     def get_searcher_instance(
 #             self,
@@ -304,7 +305,16 @@ class SkOptSearcher(Searcher):
 class PBTSearcher(RandomSearch):
     def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         max_t = max_t or 1
-        return PopulationBasedTraining()
+        return PopulationBasedTraining(
+            time_attr="training_iteration",
+            metric="loss",
+            mode="min",
+            perturbation_interval=1,
+            hyperparam_mutations={
+                "lr": tune.loguniform(1e-4, 1e-2),
+                "1_minus_momentum": tune.loguniform(0.003, 0.1),
+            },
+        )
 
     uses_partial_results: bool = True
     suitable_for_classical_ml: bool = False
