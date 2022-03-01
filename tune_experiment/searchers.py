@@ -306,9 +306,6 @@ class PBTSearcher(RandomSearch):
     def get_scheduler_instance(self, max_t: int) -> Optional[TrialScheduler]:
         max_t = max_t or 1
         return PopulationBasedTraining(
-            time_attr="training_iteration",
-            metric="loss",
-            mode="min",
             perturbation_interval=1,
             hyperparam_mutations={
                 "lr": tune.loguniform(1e-4, 1e-2),
