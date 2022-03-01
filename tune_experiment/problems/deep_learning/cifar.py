@@ -62,8 +62,8 @@ def train_func(config):
     model = train.torch.prepare_model(model)
 
     # Create optimizer.
-    lr = config.get("lr", 0.1),
-    momentum = 1-config.get("1_minus_momentum", 0.1),
+    lr = config.get("lr", 0.1)
+    momentum = 1-config.get("1_minus_momentum", 0.1)
     optimizer = torch.optim.SGD(
         model.parameters(),
         lr=lr,
