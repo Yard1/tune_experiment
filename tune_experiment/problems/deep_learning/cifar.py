@@ -62,14 +62,19 @@ def train_func(config):
     model = train.torch.prepare_model(model)
 
     # Create optimizer.
+    lr = config.get("lr", 0.1),
+    momentum = 1-config.get("1_minus_momentum", 0.1),
     optimizer = torch.optim.SGD(
         model.parameters(),
-        lr=config.get("lr", 0.1),
-        momentum=1-config.get("1_minus_momentum", 0.1),
+        lr=lr,
+        momentum=momentum,
         weight_decay=config.get("weight_decay", 0.001),
     )
     if "optimizer" in checkpoint:
         optimizer.load_state_dict(checkpoint["optimizer"])
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
+            param_group["momentum"] = momentum
 
     # Load in training and validation data.
     transform_train = transforms.Compose(
